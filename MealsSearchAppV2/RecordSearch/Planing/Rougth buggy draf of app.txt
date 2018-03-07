@@ -1,0 +1,188 @@
+Imports System.IO
+Imports System.Runtime.InteropServices
+Imports System.Data
+
+Public Class Form1
+    Dim File1 As String = ""
+    Dim File1Loc As String = ""
+    Dim accountsDict As New Dictionary(Of Integer, Account)
+    Dim userEntreysDict As New Dictionary(Of Integer, Account)
+
+    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Win32.AllocConsole()
+        Console.WriteLine("Done!")
+
+    End Sub
+
+    Public Sub GetUserEntreys(Name As String)
+
+        Dim i As Integer = 0
+        For Each entrey In accountsDict
+            If (entrey.Value.AcName = Name) Then
+                userEntreysDict.Add(i, entrey.Value)
+                i = i + 1
+            End If
+        Next
+        i = 0
+        Console.WriteLine(Name + " Entreys")
+        Console.WriteLine("-------------------------------------------------------")
+        For Each userEntrey In userEntreysDict
+            i = i + 1
+            Console.WriteLine(" ")
+            Console.WriteLine("userEntreysDict No. " + i.ToString)
+            Console.WriteLine("Date: " + userEntrey.Value.AcDate.ToLongDateString + " Time: " + userEntrey.Value.ACTime + " ID: " + userEntrey.Value.ACID + " Type: " + userEntrey.Value.ACType)
+        Next
+
+
+
+    End Sub
+    Public Sub BuildDict()
+        Dim srm As New IO.StreamReader(File1Loc)
+        Dim newline() As String = srm.ReadLine.Split(","c)
+
+
+        Dim i As Integer = 0
+
+        While (Not srm.EndOfStream)
+            newline = srm.ReadLine.Split(","c)
+
+            Dim AcEntrey As New Account(newline(36), newline(33), newline(34), newline(37), newline(35))
+            'Dim AcEntrey As New Account(newline(0), newline(1), newline(2), newline(3), newline(4))
+            i = i + 1
+            accountsDict.Add(i, AcEntrey)
+
+        End While
+        Dim gotEntrey As Account = accountsDict.Item(1)
+        Console.WriteLine("Name: ")
+        Console.WriteLine(gotEntrey.AcName)
+        Console.WriteLine("Date: ")
+        Console.WriteLine(gotEntrey.AcDate.ToLongDateString)
+        Console.WriteLine("Time: ")
+        Console.WriteLine(gotEntrey.ACTime)
+        Console.WriteLine("ID: ")
+        Console.WriteLine(gotEntrey.ACID)
+        Console.WriteLine("Type: ")
+        Console.WriteLine(gotEntrey.ACType)
+
+
+
+    End Sub
+
+    Private Sub ReadTheFile()
+        'Console.WriteLine(File1)
+        'Console.Read()
+
+        'Load the file
+        Dim sr As New IO.StreamReader(File1Loc)
+        'Create a new datatable object
+        Dim dt As New DataTable
+        'Create a string from eatch line, split the string up at eatch "," into a array , Return the split string after c number of splits where c is the number in the array
+        Dim newline() As String = sr.ReadLine.Split(","c)
+
+        'Create new data colums (headings) in the Data table, Eatch colums value is that of the newline split
+        dt.Columns.AddRange({New DataColumn(newline(33)), New DataColumn(newline(34)), New DataColumn(newline(35)), New DataColumn(newline(36)), New DataColumn(newline(37))})
+        'dt.Columns.AddRange({New DataColumn(newline(0)), New DataColumn(newline(1)), New DataColumn(newline(2)), New DataColumn(newline(3)), New DataColumn(newline(4))})
+
+        'While we have not finished reading the file
+        While (Not sr.EndOfStream)
+            'keep spliting the strings up
+            newline = sr.ReadLine.Split(","c)
+            'Define a newrow as a new row in the datatable
+            Dim newrow As DataRow = dt.NewRow
+            'the line for eatch newrow will be these
+            newrow.ItemArray = {newline(33), newline(34), newline(35), newline(36), newline(37)}
+            'newrow.ItemArray = {newline(0), newline(1), newline(2), newline(3), newline(4)}
+            'Create a new row
+            dt.Rows.Add(newrow)
+        End While
+        DataGrid.DataSource = dt
+    End Sub
+
+    Private Sub btnLoad_Click(sender As Object, e As EventArgs) Handles btnLoad.Click
+        'Will open load file dialog box And if a file Is chosen wil load 
+        Ofd.ShowDialog()
+        'Check to see if there is a file selected
+        If Ofd.FileName > "" Then
+            'Set the File1 path to the parth of the file we want to load
+            Try
+                File1 = File.ReadAllText(Ofd.FileName)
+                File1Loc = Ofd.FileName
+                ReadTheFile()
+                BuildDict()
+                GetUserEntreys("BEN CAWLEY")
+            Catch ex As System.IO.IOException
+                MsgBox("An error occurred. Mostlikley you did not select a file")
+            End Try
+
+
+        End If
+
+    End Sub
+
+    Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
+        Dim SfLoc As String
+        'Will open save file dialog box 
+        Sfd.ShowDialog()
+        'Check to see if there is a file selected
+        If (Sfd.FileName > "") Then
+            Try
+                SfLoc = Sfd.FileName
+                Test(SfLoc)
+            Catch ex As System.IO.IOException
+                MsgBox(ex.Message)
+            End Try
+        End If
+
+
+    End Sub
+
+    Public Sub Test(SaveFileLoc As String)
+        Try
+            Dim Savefile As System.IO.StreamWriter
+            Savefile = My.Computer.FileSystem.OpenTextFileWriter(SaveFileLoc, True)
+
+            For Each userEntrey In userEntreysDict
+                Savefile.WriteLine(userEntrey.Value.AcName + "," + userEntrey.Value.AcDate + "," + userEntrey.Value.ACTime + "," + userEntrey.Value.ACID + "," + userEntrey.Value.ACType)
+            Next
+
+
+
+            Savefile.Close()
+        Catch ex As Exception
+            MessageBox.Show(ex.Message)
+        End Try
+
+    End Sub
+End Class
+
+Public Class Win32
+    <DllImport("kernel32.dll")> Public Shared Function AllocConsole() As Boolean
+
+    End Function
+    <DllImport("kernel32.dll")> Public Shared Function FreeConsole() As Boolean
+
+    End Function
+
+End Class
+
+Public Class Account
+
+    Public AcName As String
+    Public AcDateStr As String
+    Public AcDate As Date
+    Public ACTime As String
+    Public ACType As String
+    Public ACID As String
+
+
+    Public Sub New(AN As String, AD As String, ATi As String, ATy As String, AI As String)
+        Me.AcName = AN
+        Me.AcDateStr = AD
+        Me.ACTime = ATi
+        Me.ACType = ATy
+        Me.ACID = AI
+
+        Me.AcDate = DateTime.Parse(Me.AcDateStr)
+
+    End Sub
+End Class
